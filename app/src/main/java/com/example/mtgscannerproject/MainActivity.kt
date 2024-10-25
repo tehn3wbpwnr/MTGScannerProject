@@ -22,7 +22,8 @@ class MainActivity : ComponentActivity() {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Greeting(
                         name = "Android",
-                        modifier = Modifier.padding(innerPadding)
+                        modifier = Modifier
+                            .fillMaxSize().padding(innerPadding)
                     )
                 }
             }
@@ -41,7 +42,9 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
-    MTGScannerProjectTheme {
-        Greeting("Android")
-    }
+    Greeting(
+        name = "Android",
+        modifier = Modifier
+            .fillMaxSize()
+    )
 }
