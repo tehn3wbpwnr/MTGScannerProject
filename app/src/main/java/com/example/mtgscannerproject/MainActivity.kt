@@ -1,6 +1,7 @@
 package com.example.mtgscannerproject
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.widget.Toast
@@ -92,6 +93,8 @@ class MainActivity : ComponentActivity() {
     private fun scanCards() {
         /* TODO: Add scan cards functionality */
         Toast.makeText(this, "Scan Cards button clicked", Toast.LENGTH_SHORT).show()
+        val intent = Intent(this, CameraActivity::class.java)
+        startActivity(intent)
     }
 
 }
