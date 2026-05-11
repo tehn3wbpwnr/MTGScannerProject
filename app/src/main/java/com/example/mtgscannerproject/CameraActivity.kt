@@ -25,11 +25,11 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.example.mtgscannerproject.ui.theme.MTGScannerProjectTheme
 import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.TextRecognizer
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import java.util.concurrent.TimeUnit
+import com.example.mtgscannerproject.ocr.OCRProcessor
 
 class CameraActivity : ComponentActivity() {
 
@@ -38,9 +38,7 @@ class CameraActivity : ComponentActivity() {
     private val recognizer: TextRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 
     private var lastProcessedTime = System.currentTimeMillis()
-    private var lastDetectedText = ""
-    private var lastConfirmedDetection = ""
-    private var stableCount = 0
+    private val ocrProcessor = OCRProcessor()
     private val detectedText = mutableStateOf("Scanning...")
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -132,7 +130,12 @@ class CameraActivity : ComponentActivity() {
                 // Pass the image to ML Kit's text recognizer
                 recognizer.process(image)
                     .addOnSuccessListener { visionText ->
-                        extractText(visionText)
+
+                        val detectedCard = ocrProcessor.extractText(visionText)
+
+                        if (detectedCard != null) {
+                            detectedText.value = detectedCard
+                        }
                     }
                     .addOnFailureListener { e ->
                         Log.e("CameraActivity", "Text recognition failed: ${e.message}", e)
@@ -149,60 +152,10 @@ class CameraActivity : ComponentActivity() {
         }
     }
 
-    //This function runs the OCR to extract text and currently logs the blocks, lines, and elements
-    private fun extractText(visionText: Text) {
 
-        if (visionText.textBlocks.isEmpty()) {
-            return
-        }
 
-        // Sort blocks by Y position (top of screen first)
-        val sortedBlocks = visionText.textBlocks.sortedBy {
-            it.boundingBox?.top ?: Int.MAX_VALUE
-        }
 
-        //for now assume top block is card name
-        val cardName = sortedBlocks.first().text.trim()
 
-        Log.d("CARD_NAME", cardName)
 
-        handleDetection(cardName)
-    }
-
-    //This is an initial implementation of trying to only allow a stable text detection to trigger further action
-    private fun handleDetection(text: String){
-        if(text == lastDetectedText){
-            stableCount++
-        } else {
-            stableCount = 1
-            lastDetectedText = text
-        }
-
-        if (stableCount >= 3 && text != lastConfirmedDetection) {
-            Log.d("OCR_STABLE", "stable detection: $text")
-            stableCount = 0;
-            //TODO call further actions here
-            detectedText.value = text
-            lastConfirmedDetection = text
-        }
-    }
-
-    //Try and regex match the patterns of set codes/collector numbers probably move to utils later
-    private fun parsePossibleCardData(setCode: String, cardNum: String) {
-
-        val setCodeRegex = Regex("\\b[A-Z0-9]{3}\\b")
-        val collectorRegex = Regex("\\b\\d{1,3}[a-zA-Z]?\\b")
-
-        val setMatches = setCodeRegex.findAll(setCode)
-        val collectorMatches = collectorRegex.findAll(cardNum)
-
-        for (match in setMatches) {
-            Log.d("SET_CODE", match.value)
-        }
-
-        for (match in collectorMatches) {
-            Log.d("COLLECTOR_NUM", match.value)
-        }
-    }
 }
 
