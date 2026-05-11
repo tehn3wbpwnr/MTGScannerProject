@@ -30,6 +30,7 @@ import com.google.mlkit.vision.text.TextRecognizer
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import java.util.concurrent.TimeUnit
 import com.example.mtgscannerproject.ocr.OCRProcessor
+import org.opencv.android.OpenCVLoader
 
 class CameraActivity : ComponentActivity() {
 
@@ -42,6 +43,11 @@ class CameraActivity : ComponentActivity() {
     private val detectedText = mutableStateOf("Scanning...")
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        if (OpenCVLoader.initDebug()) {
+            Log.d("OpenCV", "OpenCV loaded successfully")
+        } else {
+            Log.e("OpenCV", "OpenCV failed to load")
+        }
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
