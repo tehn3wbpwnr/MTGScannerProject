@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import com.example.mtgscannerproject.network.RetrofitClient
 import com.example.mtgscannerproject.ui.theme.MTGScannerProjectTheme
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
@@ -30,6 +31,10 @@ import com.google.mlkit.vision.text.TextRecognizer
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import java.util.concurrent.TimeUnit
 import com.example.mtgscannerproject.ocr.OCRProcessor
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.opencv.android.OpenCVLoader
 
 class CameraActivity : ComponentActivity() {
@@ -133,7 +138,7 @@ class CameraActivity : ComponentActivity() {
             if (mediaImage != null) {
                 val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
 
-                // Pass the image to ML Kit's text recognizer
+                // Pass the image to ML Kit's text recognizer TODO replace this area with pre processing with openCV
                 recognizer.process(image)
                     .addOnSuccessListener { visionText ->
 
@@ -141,9 +146,48 @@ class CameraActivity : ComponentActivity() {
 
                         if (detectedCard != null) {
                             detectedText.value = detectedCard
+                            Log.d("SCRYFALL_QUERY", "Searching for: [$detectedCard]")
+
+                            //coroutine for API call here
+                            CoroutineScope(Dispatchers.IO).launch{
+                                try{
+
+
+                                    val card =
+                                        RetrofitClient.api.getCardByName(detectedCard)
+
+                                    Log.d("SCRYFALL_SUCCESS", "Found: ${card.name}")
+
+                                    withContext(Dispatchers.Main) {
+                                        detectedText.value =
+                                            "${card.name} - $${card.prices?.usd ?: "No price"}"
+                                    }
+                                }
+                                catch (e: retrofit2.HttpException) {
+
+                                    val errorBody = e.response()?.errorBody()?.string()
+                                    val code = e.code()
+
+                                    Log.e("SCRYFALL_HTTP", "HTTP $code")
+                                    Log.e("SCRYFALL_HTTP", "Query: [$detectedCard]")
+                                    Log.e("SCRYFALL_HTTP", "Error body: $errorBody")
+
+                                    withContext(Dispatchers.Main) {
+                                        detectedText.value = "HTTP $code: $detectedCard"
+                                    }
+
+                                } catch (e: Exception) {
+
+                                    Log.e("SCRYFALL_ERROR", "Query: [$detectedCard]", e)
+
+                                    withContext(Dispatchers.Main) {
+                                        detectedText.value = "Error: ${e.message}"
+                                    }
+                                }
                         }
                     }
-                    .addOnFailureListener { e ->
+                        }
+                            .addOnFailureListener { e ->
                         Log.e("CameraActivity", "Text recognition failed: ${e.message}", e)
                     }
                     .addOnCompleteListener {

@@ -73,5 +73,15 @@ dependencies {
     implementation(libs.androidx.camera.view)
     implementation(libs.androidx.camera.core)
 
+    //Open CV from maven
     implementation(libs.opencv)
+
+    //Coroutines
+    implementation(libs.kotlinx.coroutines.android)
+
+    // Kotlinx Serialization
+    implementation(libs.kotlinx.serialization.json)
+
+    // Logging
+    implementation(libs.logging.interceptor)
 }
